@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Журнал — мобильный</title>
+<style>
+:root{
+  --bg:#f4f4f4;--panel:#fff;--sidebar:#e8e8e8;--hdr:#e0e0e0;
+  --fg:#222;--fg2:#888;--border:#d0d0d0;--accent:#4a90d9;
+  --green:#c8e6c9;--green-fg:#1b5e20;--red:#ffcdd2;--red-fg:#b71c1c;
+  --amber:#fff9c4;--amber-fg:#e65100;--safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#1e1e2e;--panel:#252535;--sidebar:#181825;--hdr:#313244;
+        --fg:#cdd6f4;--fg2:#6c7086;--border:#45475a;--accent:#89b4fa;
+        --green:#1a3020;--green-fg:#a6e3a1;--red:#301818;--red-fg:#f38ba8;
+        --amber:#302e10;--amber-fg:#f9e2af;}
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:15px}
+body{display:flex;flex-direction:column;padding-top:var(--safe-top);padding-bottom:var(--safe-bot)}
+
+/* ─ Шапка ─ */
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);
+        padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+        position:sticky;top:var(--safe-top);z-index:50}
+.topbar h1{font-size:17px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync-btn{padding:6px 14px;border-radius:8px;border:none;background:var(--accent);
+           color:#fff;font-size:13px;cursor:pointer;flex-shrink:0}
+.sync-status{font-size:11px;color:var(--fg2);flex-shrink:0}
+
+/* ─ Табы ─ */
+.tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:11px;text-align:center;font-size:13px;cursor:pointer;
+     border-bottom:2px solid transparent;color:var(--fg2)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+/* ─ Контент ─ */
+.page{flex:1;overflow:auto;padding:12px}
+
+/* ─ Группы ─ */
+.group-list{display:flex;flex-direction:column;gap:8px}
+.group-card{background:var(--panel);border-radius:12px;padding:14px 16px;
+            border:1px solid var(--border);cursor:pointer;
+            display:flex;align-items:center;justify-content:space-between}
+.group-card.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.group-card .gname{font-weight:500}
+.group-card .gmeta{font-size:12px;color:var(--fg2);margin-top:2px}
+.group-card .arrow{color:var(--fg2);font-size:18px}
+
+/* ─ Посещаемость ─ */
+.att-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.att-header h2{font-size:15px;font-weight:600;flex:1}
+.lesson-select{padding:6px 10px;border-radius:8px;border:1px solid var(--border);
+               background:var(--panel);color:var(--fg);font-size:13px;max-width:100%}
+.stu-list{display:flex;flex-direction:column;gap:6px}
+.stu-row{background:var(--panel);border-radius:10px;padding:10px 14px;
+         border:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.stu-num{color:var(--fg2);font-size:13px;width:22px;text-align:right;flex-shrink:0}
+.stu-name{flex:1;font-size:14px}
+.stu-star{color:#f1c40f;margin-right:2px}
+.att-btns{display:flex;gap:5px;flex-shrink:0}
+.att-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);
+         background:var(--hdr);color:var(--fg);font-size:14px;font-weight:700;
+         cursor:pointer;display:flex;align-items:center;justify-content:center}
+.att-btn.P{background:var(--green);color:var(--green-fg);border-color:var(--green-fg)}
+.att-btn.N{background:var(--red);color:var(--red-fg);border-color:var(--red-fg)}
+.att-btn.O{background:var(--amber);color:var(--amber-fg);border-color:var(--amber-fg)}
+.save-bar{position:sticky;bottom:var(--safe-bot);background:var(--bg);
+          padding:10px 12px;border-top:1px solid var(--border)}
+.save-bar button{width:100%;padding:13px;border-radius:12px;border:none;
+                 background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+
+/* ─ Оценки (просмотр) ─ */
+.grades-table{width:100%;border-collapse:collapse;font-size:13px}
+.grades-table th{background:var(--hdr);padding:8px 10px;text-align:left;
+                 border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
+.grades-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.grades-table tr:last-child td{border-bottom:none}
+.score-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600}
+
+/* ─ Лоадер / ошибка ─ */
+.loader{text-align:center;padding:40px;color:var(--fg2);font-size:14px}
+.error-box{background:#ffebee;color:#b71c1c;border-radius:10px;padding:14px;margin:12px;font-size:13px}
+.cfg-box{background:var(--panel);border-radius:12px;padding:20px;margin:12px;border:1px solid var(--border)}
+.cfg-box h2{font-size:16px;font-weight:600;margin-bottom:12px}
+.cfg-box label{font-size:13px;color:var(--fg2);display:block;margin-bottom:4px;margin-top:12px}
+.cfg-box input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);
+               background:var(--bg);color:var(--fg);font-size:14px}
+.cfg-box button{margin-top:16px;width:100%;padding:13px;border-radius:12px;border:none;
+                background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1 id="topTitle">Журнал</h1>
+  <span class="sync-status" id="syncStatus"></span>
+  <button class="sync-btn" id="syncBtn" onclick="syncNow()">⟳ Обновить</button>
+</div>
+
+<div class="tabs" id="tabs" style="display:none">
+  <div class="tab active" onclick="showTab('att',this)">📅 Посещаемость</div>
+  <div class="tab"        onclick="showTab('grd',this)">⭐ Оценки</div>
+</div>
+
+<div class="page" id="mainPage"></div>
+
+<script>
+// ── Конфигурация ──────────────────────────────────────────────────────────────
+const CFG_KEY = 'sb_config';
+const _DEFAULTS = {
+  url: 'https://iccmfopkvwblisbxaoqe.supabase.co',
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljY21mb3BrdndibGlzYnhhb3FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MDU2NjAsImV4cCI6MjEwNjk4MTY2MH0.9Pd79I4sGjxm9zV7xV6jX1pD7cpJlZ-Kk4zMSKvQnNI'
+};
+let CFG = {..._DEFAULTS, ...JSON.parse(localStorage.getItem(CFG_KEY) || '{}')};
+
+let DATA     = null;   // весь журнал
+let GROUP    = null;   // активная группа
+let LESSON   = null;   // выбранное занятие
+let PENDING  = {};     // несохранённые отметки { "sid-lid": "П"|"Н"|"О"|"" }
+let CUR_TAB  = 'att';
+
+// ── Supabase API ──────────────────────────────────────────────────────────────
+async function sbGet(table, params=''){
+  const r = await fetch(`${CFG.url}/rest/v1/${table}?${params}`, {headers: hdrs()});
+  if(!r.ok) throw new Error(`GET ${table}: ${await r.text()}`);
+  return r.json();
+}
+async function sbUpsert(table, rows){
+  if(!rows.length) return;
+  const r = await fetch(`${CFG.url}/rest/v1/${table}`, {
+    method:'POST',
+    headers:{...hdrs(),'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body: JSON.stringify(rows)
+  });
+  if(!r.ok) throw new Error(`UPSERT ${table}: ${await r.text()}`);
+}
+function hdrs(){
+  return {
+    'apikey': CFG.key,
+    'Authorization': `Bearer ${CFG.key}`,
+    'Content-Type': 'application/json'
+  };
+}
+
+// ── Загрузка данных ───────────────────────────────────────────────────────────
+async function loadAll(){
+  setStatus('⏳ Загрузка…');
+  try {
+    const [groups, students, lessons, att, works, grades] = await Promise.all([
+      sbGet('groups',   'order=id.asc'),
+      sbGet('students', 'order=group_id.asc,position.asc'),
+      sbGet('lessons',  'order=group_id.asc,date.asc'),
+      sbGet('attendance'),
+      sbGet('works',    'order=group_id.asc,id.asc'),
+      sbGet('grades'),
+    ]);
+
+    const attMap   = {};
+    att.forEach(r => attMap[`${r.student_id}-${r.lesson_id}`] = r.value);
+    const gradeMap = {};
+    grades.forEach(r => gradeMap[`${r.student_id}-${r.work_id}`] = r.value);
+
+    DATA = groups.filter(g => !g.archived).map(g => {
+      const gid  = g.id;
+      const stus = students.filter(s => s.group_id === gid);
+      const less = lessons.filter(l => l.group_id === gid);
+      const wrks = works.filter(w => w.group_id === gid);
+      const sids = new Set(stus.map(s => s.id));
+      const lids = new Set(less.map(l => l.id));
+      const wids = new Set(wrks.map(w => w.id));
+      const gAtt = {}, gGrd = {};
+      for(const [k,v] of Object.entries(attMap)){
+        const [sid,lid] = k.split('-').map(Number);
+        if(sids.has(sid) && lids.has(lid)) gAtt[k] = v;
+      }
+      for(const [k,v] of Object.entries(gradeMap)){
+        const [sid,wid] = k.split('-').map(Number);
+        if(sids.has(sid) && wids.has(wid)) gGrd[k] = v;
+      }
+      return {
+        id: gid, name: g.name,
+        starosta_id: g.starosta_id,
+        starosta_contacts: g.starosta_contacts || '',
+        students: stus, lessons: less, works: wrks,
+        attendance: gAtt, grades: gGrd
+      };
+    });
+
+    setStatus('✓ ' + new Date().toLocaleTimeString('ru'));
+    document.getElementById('tabs').style.display = 'flex';
+    renderGroupList();
+  } catch(e){
+    setStatus('❌ Ошибка');
+    document.getElementById('mainPage').innerHTML =
+      `<div class="error-box">Ошибка загрузки:<br>${e.message}</div>`;
+  }
+}
+
+function setStatus(t){ document.getElementById('syncStatus').textContent = t; }
+async function syncNow(){ PENDING = {}; await loadAll(); if(GROUP) selectGroup(GROUP.id); }
+
+// ── Группы ────────────────────────────────────────────────────────────────────
+function renderGroupList(){
+  const el = document.getElementById('mainPage');
+  el.innerHTML = '<div class="group-list">' +
+    DATA.map(g => `
+      <div class="group-card ${GROUP && GROUP.id===g.id?'active':''}" onclick="selectGroup(${g.id})">
+        <div>
+          <div class="gname">${g.name}</div>
+          <div class="gmeta">${g.students.length} студ. · ${g.lessons.length} зан.</div>
+        </div>
+        <div class="arrow">›</div>
+      </div>`).join('') +
+  '</div>';
+}
+
+function selectGroup(id){
+  GROUP  = DATA.find(g => g.id === id);
+  LESSON = GROUP.lessons.length ? GROUP.lessons[GROUP.lessons.length-1] : null;
+  PENDING = {};
+  document.getElementById('topTitle').textContent = GROUP.name;
+  renderTab();
+}
+
+// ── Табы ──────────────────────────────────────────────────────────────────────
+function showTab(tab, el){
+  CUR_TAB = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTab();
+}
+function renderTab(){
+  if(!GROUP){ renderGroupList(); return; }
+  if(CUR_TAB==='att') renderAttendance();
+  else                renderGrades();
+}
+
+// ── Посещаемость ──────────────────────────────────────────────────────────────
+function renderAttendance(){
+  if(!GROUP.lessons.length){
+    document.getElementById('mainPage').innerHTML =
+      '<div class="loader">Нет занятий в этой группе</div>'; return;
+  }
+  const options = GROUP.lessons
+    .slice().reverse()
+    .map(l => `<option value="${l.id}" ${LESSON&&l.id===LESSON.id?'selected':''}>
+      ${fmtDate(l.date)} — ${l.topic}</option>`).join('');
+
+  const rows = GROUP.students.map((s,i) => {
+    const key = `${s.id}-${LESSON.id}`;
+    const val = PENDING[key] !== undefined ? PENDING[key]
+              : (GROUP.attendance[key] || '');
+    const isStar = GROUP.starosta_id === s.id;
+    return `<div class="stu-row">
+      <span class="stu-num">${i+1}</span>
+      <span class="stu-name">${isStar?'<span class="stu-star">★</span>':''}${s.name}</span>
+      <div class="att-btns">
+        ${['П','Н','О'].map(v =>
+          `<button class="att-btn ${val===v?v:''}" onclick="setAtt(${s.id},${LESSON.id},'${v}')">${v}</button>`
+        ).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  const hasPending = Object.keys(PENDING).length > 0;
+
+  document.getElementById('mainPage').innerHTML = `
+    <div class="att-header">
+      <h2>Посещаемость</h2>
+      <select class="lesson-select" onchange="changeLesson(this.value)">${options}</select>
+    </div>
+    <div class="stu-list">${rows}</div>
+    ${hasPending ? `<div class="save-bar">
+      <button onclick="saveAttendance()">💾 Сохранить изменения (${Object.keys(PENDING).length})</button>
+    </div>` : ''}`;
+}
+
+function fmtDate(d){ const p=d.split('-'); return p[2]+'.'+p[1]+'.'+p[0].slice(2); }
+
+function changeLesson(lid){
+  LESSON = GROUP.lessons.find(l => l.id === parseInt(lid));
+  PENDING = {};
+  renderAttendance();
+}
+
+function setAtt(sid, lid, val){
+  const key = `${sid}-${lid}`;
+  const cur = GROUP.attendance[key] || '';
+  // повторный клик — снять отметку
+  PENDING[key] = (cur === val && PENDING[key] === undefined) ? '' :
+                 (PENDING[key] === val ? '' : val);
+  renderAttendance();
+}
+
+async function saveAttendance(){
+  if(!Object.keys(PENDING).length) return;
+  setStatus('⏳ Сохранение…');
+  try {
+    const rows = Object.entries(PENDING).map(([key, value]) => {
+      const [student_id, lesson_id] = key.split('-').map(Number);
+      return {student_id, lesson_id, value};
+    });
+    await sbUpsert('attendance', rows);
+    // применяем локально
+    for(const [key, val] of Object.entries(PENDING)){
+      GROUP.attendance[key] = val;
+      // обновить и в DATA
+      const g = DATA.find(x => x.id === GROUP.id);
+      if(g) g.attendance[key] = val;
+    }
+    PENDING = {};
+    setStatus('✓ ' + new Date().toLocaleTimeString('ru'));
+    renderAttendance();
+  } catch(e){
+    setStatus('❌ Ошибка');
+    alert('Не удалось сохранить: ' + e.message);
+  }
+}
+
+// ── Оценки (только просмотр) ──────────────────────────────────────────────────
+function renderGrades(){
+  if(!GROUP.works.length){
+    document.getElementById('mainPage').innerHTML =
+      '<div class="loader">Нет работ в этой группе</div>'; return;
+  }
+  const scoreColor = v => v >= 90 ? '#c8f5c8' : v >= 75 ? '#c8e6c9' : v >= 60 ? '#fff9c4' : '#ffcdd2';
+  const scoreFg    = v => v >= 60 ? '#1b5e20' : '#b71c1c';
+
+  const thead = `<tr>
+    <th>#</th><th>Студент</th>
+    ${GROUP.works.map(w=>`<th>${w.name}<br><small style="font-weight:400;color:var(--fg2)">/${w.max_score}</small></th>`).join('')}
+    <th>Σ</th>
+  </tr>`;
+
+  const tbody = GROUP.students.map((s,i) => {
+    const isStar = GROUP.starosta_id === s.id;
+    let sum = 0, cnt = 0;
+    const cells = GROUP.works.map(w => {
+      const v = GROUP.grades[`${s.id}-${w.id}`];
+      if(v != null){ sum += Number(v); cnt++; }
+      return v != null
+        ? `<td><span class="score-badge" style="background:${scoreColor(v)};color:${scoreFg(v)}">${v}</span></td>`
+        : '<td style="color:var(--fg2)">—</td>';
+    }).join('');
+    const sumCell = cnt
+      ? `<td><span class="score-badge" style="background:${scoreColor(sum)};color:${scoreFg(sum)};font-size:13px">${sum}</span></td>`
+      : '<td>—</td>';
+    return `<tr>
+      <td style="color:var(--fg2)">${i+1}</td>
+      <td>${isStar?'<span class="stu-star">★</span>':''}${s.name}</td>
+      ${cells}${sumCell}
+    </tr>`;
+  }).join('');
+
+  document.getElementById('mainPage').innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="grades-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>
+    </div>`;
+}
+
+// ── Настройка ─────────────────────────────────────────────────────────────────
+function showConfig(){
+  document.getElementById('tabs').style.display = 'none';
+  document.getElementById('mainPage').innerHTML = `
+    <div class="cfg-box">
+      <h2>⚙️ Подключение к Supabase</h2>
+      <p style="font-size:13px;color:var(--fg2);margin-bottom:4px">
+        Введите данные из Settings → API вашего Supabase-проекта.</p>
+      <label>Project URL</label>
+      <input id="cfgUrl" type="url" placeholder="https://xxxx.supabase.co" value="${CFG.url||''}">
+      <label>anon public key</label>
+      <input id="cfgKey" type="text" placeholder="eyJ..." value="${CFG.key||''}">
+      <button onclick="saveConfig()">Сохранить и подключиться</button>
+    </div>`;
+}
+
+function saveConfig(){
+  CFG = {
+    url: document.getElementById('cfgUrl').value.trim().replace(/\/$/, ''),
+    key: document.getElementById('cfgKey').value.trim()
+  };
+  localStorage.setItem(CFG_KEY, JSON.stringify(CFG));
+  document.getElementById('topTitle').textContent = 'Журнал';
+  loadAll();
+}
+
+// ── Старт ─────────────────────────────────────────────────────────────────────
+if(CFG.url && CFG.key){
+  loadAll();
+} else {
+  showConfig();
+}
+
+// Кнопка настроек в шапке — долгое нажатие на заголовок
+let pressTimer;
+document.getElementById('topTitle').addEventListener('pointerdown', () => {
+  pressTimer = setTimeout(showConfig, 800);
+});
+document.getElementById('topTitle').addEventListener('pointerup', () => clearTimeout(pressTimer));
+</script>
+</body>
+</html>
